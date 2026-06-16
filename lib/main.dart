@@ -52,6 +52,7 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme
       ,
       themeMode: ThemeMode.light,
+      debugShowCheckedModeBanner: false,
       home: user != null ? const NotesScreen() : const SplashScreen(),
     );
   }

@@ -25,13 +25,22 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   @override
   void initState() {
     super.initState();
-    _notesBloc = createNotesBloc();
-    _loadNotes();
+
+    // ✅ FIX: Read userId FIRST from userProvider, then create the bloc with it
+    final user = ref.read(userProvider);
+    final userId = user?.uid ?? '';
+
+    _notesBloc = createNotesBloc(); // plain creation — no userId needed in injector
+
+    // ✅ FIX: Dispatch LoadNotes immediately with the real userId
+    if (userId.isNotEmpty) {
+      _notesBloc.add(LoadNotes(userId));
+    }
   }
 
   void _loadNotes() {
     final user = ref.read(userProvider);
-    if (user != null) {
+    if (user != null && user.uid.isNotEmpty) {
       _notesBloc.add(LoadNotes(user.uid));
     }
   }
@@ -52,7 +61,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         ),
       ),
     );
-
     _notesBloc.add(LoadNotes(user.uid));
   }
 
@@ -69,7 +77,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         ),
       ),
     );
-
     _notesBloc.add(LoadNotes(user.uid));
   }
 
@@ -88,7 +95,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         ),
       ),
     );
-
     _notesBloc.add(LoadNotes(user.uid));
   }
 
@@ -162,8 +168,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         height: 1.5,
-                        color:
-                        theme.colorScheme.onSurface.withOpacity(0.68),
+                        color: theme.colorScheme.onSurface.withOpacity(0.68),
                       ),
                     ),
                     const SizedBox(height: 22),
@@ -171,11 +176,11 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.of(dialogContext).pop(false);
-                            },
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding:
+                              const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -190,13 +195,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: FilledButton(
-                            onPressed: () {
-                              Navigator.of(dialogContext).pop(true);
-                            },
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
                             style: FilledButton.styleFrom(
                               backgroundColor: theme.colorScheme.error,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding:
+                              const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -222,11 +227,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    // ✅ FIX: watch userProvider — if user becomes null after logout, screen reacts
     final UserEntity? user = ref.watch(userProvider);
 
     if (user == null) {
       return const Scaffold(
-        body: Center(child: Text('User not found')),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -261,8 +268,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       builder: (context, state) {
                         if (state.status == NotesStatus.loading) {
                           return const Center(
-                            child: CircularProgressIndicator(),
-                          );
+                              child: CircularProgressIndicator());
                         }
 
                         if (state.notes.isEmpty) {
@@ -270,9 +276,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         }
 
                         return RefreshIndicator(
-                          onRefresh: () async {
-                            _loadNotes();
-                          },
+                          onRefresh: () async => _loadNotes(),
                           child: ListView.separated(
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding:
@@ -290,32 +294,25 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                 background: Container(
                                   alignment: Alignment.centerRight,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                  ),
+                                      horizontal: 24),
                                   decoration: BoxDecoration(
                                     color: theme.colorScheme.error,
                                     borderRadius: BorderRadius.circular(28),
                                   ),
-                                  child: const Icon(
-                                    Icons.delete_rounded,
-                                    color: Colors.white,
-                                    size: 28,
-                                  ),
+                                  child: const Icon(Icons.delete_rounded,
+                                      color: Colors.white, size: 28),
                                 ),
-                                confirmDismiss: (_) async {
-                                  return await _showDeleteDialog(note);
-                                },
+                                confirmDismiss: (_) async =>
+                                await _showDeleteDialog(note),
                                 onDismissed: (_) {
                                   context
                                       .read<NotesBloc>()
                                       .add(DeleteNoteEvent(note.id));
-
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       behavior: SnackBarBehavior.floating,
-                                      content: Text(
-                                        '"${note.title}" deleted',
-                                      ),
+                                      content:
+                                      Text('"${note.title}" deleted'),
                                     ),
                                   );
                                 },
@@ -323,8 +320,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                   note: note,
                                   featured: featured,
                                   onTap: () => _openDetailsScreen(user, note),
-                                  onEditTap: () =>
-                                      _openEditScreen(user, note),
+                                  onEditTap: () => _openEditScreen(user, note),
                                 ),
                               );
                             },
@@ -346,14 +342,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   }
 }
 
+// ─── Top Bar ────────────────────────────────────────────────────────────────
+
 class _LuminaTopBar extends StatelessWidget {
   final UserEntity user;
   final Future<void> Function() onLogout;
 
-  const _LuminaTopBar({
-    required this.user,
-    required this.onLogout,
-  });
+  const _LuminaTopBar({required this.user, required this.onLogout});
 
   @override
   Widget build(BuildContext context) {
@@ -397,20 +392,12 @@ class _LuminaTopBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     gradient: LinearGradient(
                       colors: isDark
-                          ? const [
-                        Color(0xFF5D7FA3),
-                        Color(0xFF2E4663),
-                      ]
-                          : const [
-                        Color(0xFF3A506B),
-                        Color(0xFF4A607C),
-                      ],
+                          ? const [Color(0xFF5D7FA3), Color(0xFF2E4663)]
+                          : const [Color(0xFF3A506B), Color(0xFF4A607C)],
                     ),
                   ),
-                  child: const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: Colors.white,
-                  ),
+                  child: const Icon(Icons.auto_awesome_rounded,
+                      color: Colors.white),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -428,12 +415,10 @@ class _LuminaTopBar extends StatelessWidget {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(
-                            Icons.person_rounded,
-                            size: 14,
-                            color: theme.colorScheme.onSurface
-                                .withOpacity(0.55),
-                          ),
+                          Icon(Icons.person_rounded,
+                              size: 14,
+                              color: theme.colorScheme.onSurface
+                                  .withOpacity(0.55)),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -456,11 +441,8 @@ class _LuminaTopBar extends StatelessWidget {
                 IconButton(
                   onPressed: () async => onLogout(),
                   tooltip: 'Logout',
-                  icon: Icon(
-                    Icons.logout_rounded,
-                    color:
-                    theme.colorScheme.onSurface.withOpacity(0.70),
-                  ),
+                  icon: Icon(Icons.logout_rounded,
+                      color: theme.colorScheme.onSurface.withOpacity(0.70)),
                 ),
               ],
             ),
@@ -471,9 +453,10 @@ class _LuminaTopBar extends StatelessWidget {
   }
 }
 
+// ─── Empty State ─────────────────────────────────────────────────────────────
+
 class _LuminaEmptyState extends StatelessWidget {
   final ThemeData theme;
-
   const _LuminaEmptyState({required this.theme});
 
   @override
@@ -489,10 +472,7 @@ class _LuminaEmptyState extends StatelessWidget {
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 36,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
               decoration: BoxDecoration(
                 color: isDark
                     ? Colors.white.withOpacity(0.06)
@@ -516,15 +496,13 @@ class _LuminaEmptyState extends StatelessWidget {
                           ? Colors.white.withOpacity(0.08)
                           : const Color(0xFFD3E4FE).withOpacity(0.85),
                     ),
-                    child: Icon(
-                      Icons.mode_edit_outline_rounded,
-                      size: 42,
-                      color: theme.colorScheme.primary.withOpacity(0.9),
-                    ),
+                    child: Icon(Icons.mode_edit_outline_rounded,
+                        size: 42,
+                        color: theme.colorScheme.primary.withOpacity(0.9)),
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'No notes found',
+                    'No notes yet',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -534,8 +512,7 @@ class _LuminaEmptyState extends StatelessWidget {
                     'Start your productivity journey by creating your first note.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface
-                          .withOpacity(0.60),
+                      color: theme.colorScheme.onSurface.withOpacity(0.60),
                     ),
                   ),
                 ],
@@ -547,6 +524,8 @@ class _LuminaEmptyState extends StatelessWidget {
     );
   }
 }
+
+// ─── Note Card ───────────────────────────────────────────────────────────────
 
 class _LuminaNoteCard extends StatelessWidget {
   final NoteEntity note;
@@ -578,9 +557,8 @@ class _LuminaNoteCard extends StatelessWidget {
       tween: Tween(begin: 0.98, end: 1),
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Transform.scale(scale: value, child: child);
-      },
+      builder: (context, value, child) =>
+          Transform.scale(scale: value, child: child),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -638,8 +616,7 @@ class _LuminaNoteCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
@@ -647,9 +624,7 @@ class _LuminaNoteCard extends StatelessWidget {
                                   fit: FlexFit.loose,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
+                                        horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: featured
                                           ? const Color(0xFF0060AC)
@@ -660,19 +635,14 @@ class _LuminaNoteCard extends StatelessWidget {
                                       BorderRadius.circular(999),
                                     ),
                                     child: Text(
-                                      featured
-                                          ? 'Featured Note'
-                                          : 'Quick Note',
+                                      featured ? 'Featured Note' : 'Quick Note',
                                       maxLines: 1,
-                                      overflow:
-                                      TextOverflow.ellipsis,
-                                      style: theme
-                                          .textTheme.labelSmall
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.labelSmall
                                           ?.copyWith(
                                         color: featured
                                             ? const Color(0xFF0060AC)
-                                            : theme.colorScheme
-                                            .primary,
+                                            : theme.colorScheme.primary,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -683,13 +653,11 @@ class _LuminaNoteCard extends StatelessWidget {
                                   child: Text(
                                     _formatDate(note.updatedAt),
                                     maxLines: 1,
-                                    overflow:
-                                    TextOverflow.ellipsis,
+                                    overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.right,
                                     style: theme.textTheme.labelSmall
                                         ?.copyWith(
-                                      color: theme
-                                          .colorScheme.onSurface
+                                      color: theme.colorScheme.onSurface
                                           .withOpacity(0.45),
                                     ),
                                   ),
@@ -701,8 +669,7 @@ class _LuminaNoteCard extends StatelessWidget {
                               note.title,
                               maxLines: featured ? 2 : 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium
-                                  ?.copyWith(
+                              style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
                                 height: 1.2,
                               ),
@@ -712,8 +679,7 @@ class _LuminaNoteCard extends StatelessWidget {
                               note.content,
                               maxLines: featured ? 4 : 3,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium
-                                  ?.copyWith(
+                              style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onSurface
                                     .withOpacity(0.64),
                                 height: 1.5,
@@ -722,12 +688,10 @@ class _LuminaNoteCard extends StatelessWidget {
                             const SizedBox(height: 16),
                             Row(
                               children: [
-                                Icon(
-                                  Icons.visibility_rounded,
-                                  size: 18,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.55),
-                                ),
+                                Icon(Icons.visibility_rounded,
+                                    size: 18,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.55)),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
@@ -736,8 +700,7 @@ class _LuminaNoteCard extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.labelMedium
                                         ?.copyWith(
-                                      color: theme
-                                          .colorScheme.onSurface
+                                      color: theme.colorScheme.onSurface
                                           .withOpacity(0.55),
                                     ),
                                   ),
@@ -765,22 +728,22 @@ class _LuminaNoteCard extends StatelessWidget {
   }
 }
 
+// ─── FAB ─────────────────────────────────────────────────────────────────────
+
 class _LuminaFab extends StatelessWidget {
   final VoidCallback onPressed;
-
   const _LuminaFab({required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3A506B)
-                .withOpacity(isDark ? 0.20 : 0.25),
+            color:
+            const Color(0xFF3A506B).withOpacity(isDark ? 0.20 : 0.25),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -793,17 +756,16 @@ class _LuminaFab extends StatelessWidget {
         isDark ? const Color(0xFF324863) : const Color(0xFF3A506B),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'New Note',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
+        label: const Text('New Note',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
     );
   }
 }
+
+// ─── Background ──────────────────────────────────────────────────────────────
 
 class _LuminaBackground extends StatelessWidget {
   const _LuminaBackground();
@@ -837,8 +799,8 @@ class _LuminaBackground extends StatelessWidget {
           top: -80,
           left: -80,
           child: _blurBlob(
-            color: const Color(0xFF64A8FE)
-                .withOpacity(isDark ? 0.18 : 0.25),
+            color:
+            const Color(0xFF64A8FE).withOpacity(isDark ? 0.18 : 0.25),
             size: 220,
           ),
         ),
@@ -846,8 +808,8 @@ class _LuminaBackground extends StatelessWidget {
           right: -120,
           bottom: 40,
           child: _blurBlob(
-            color: const Color(0xFFB2C8E8)
-                .withOpacity(isDark ? 0.12 : 0.28),
+            color:
+            const Color(0xFFB2C8E8).withOpacity(isDark ? 0.12 : 0.28),
             size: 300,
           ),
         ),
@@ -855,8 +817,8 @@ class _LuminaBackground extends StatelessWidget {
           top: 180,
           right: 20,
           child: _blurBlob(
-            color: const Color(0xFFD2E4FF)
-                .withOpacity(isDark ? 0.08 : 0.18),
+            color:
+            const Color(0xFFD2E4FF).withOpacity(isDark ? 0.08 : 0.18),
             size: 140,
           ),
         ),
@@ -864,20 +826,14 @@ class _LuminaBackground extends StatelessWidget {
     );
   }
 
-  Widget _blurBlob({
-    required Color color,
-    required double size,
-  }) {
+  Widget _blurBlob({required Color color, required double size}) {
     return IgnorePointer(
       child: ImageFiltered(
         imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
         child: Container(
           width: size,
           height: size,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
       ),
     );

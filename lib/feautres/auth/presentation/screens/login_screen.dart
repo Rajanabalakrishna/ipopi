@@ -1,5 +1,3 @@
-
-
 import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ipopi/feautres/auth/presentation/screens/sign_up_screen.dart';
 
-// Make sure this path matches your actual project structure
 import '../../../../core/theme/app_theme.dart';
-import '../../../home/presentation/screens/home_screen.dart';
 import '../../../notes/presentation/screens/notes_screen.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
@@ -18,18 +14,16 @@ class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState(); // ← fix return type
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState, not State
+class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool _rememberMe = false;
-  bool _isLoading = false;
   bool _hidePassword = true;
 
   late final AnimationController _shimmerController;
@@ -37,8 +31,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
   @override
   void initState() {
     super.initState();
-
-    // Initialize the shimmer controller for the GlassCard effect
     _shimmerController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -57,7 +49,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) return;
 
-    // Call the notifier — no setState needed for loading, state handles it
     await ref.read(authNotifierProvider.notifier).signIn(
       _emailController.text.trim(),
       _passwordController.text,
@@ -65,27 +56,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
   }
 
   String? _validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Email is required';
-    }
-
+    if (value == null || value.trim().isEmpty) return 'Email is required';
     final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    if (!emailRegex.hasMatch(value.trim())) {
-      return 'Enter a valid email address';
-    }
-
+    if (!emailRegex.hasMatch(value.trim())) return 'Enter a valid email address';
     return null;
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Password is required';
-    }
+    if (value == null || value.isEmpty) return 'Password is required';
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    // ✅ FIX: Use state-driven isLoading — not a local _isLoading variable
+    final authState = ref.watch(authNotifierProvider);
+    final isLoading = authState is AuthLoading;
 
     ref.listen<AuthState>(authNotifierProvider, (_, next) {
       if (next is AuthAuthenticated) {
@@ -100,8 +86,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
       }
     });
 
-    // Drive loading indicator from state instead of local _isLoading
-    final isLoading = ref.watch(authNotifierProvider) is AuthLoading;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final text = theme.textTheme;
@@ -122,11 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
                   child: Center(
                     child: SingleChildScrollView(
                       padding: EdgeInsets.symmetric(
-                        horizontal: isDesktop
-                            ? 40
-                            : isTablet
-                            ? 28
-                            : 20,
+                        horizontal: isDesktop ? 40 : isTablet ? 28 : 20,
                         vertical: 24,
                       ),
                       child: ConstrainedBox(
@@ -142,7 +122,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
                                 key: _formKey,
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.stretch,
                                   children: [
                                     Text(
                                       'Welcome Back',
@@ -170,24 +151,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
                                     const SizedBox(height: 32),
 
                                     _SectionLabel(
-                                      text: 'Email Address',
-                                      isDark: isDark,
-                                    ),
+                                        text: 'Email Address',
+                                        isDark: isDark),
                                     const SizedBox(height: 6),
                                     _InputField(
                                       controller: _emailController,
                                       hintText: 'name@company.com',
                                       prefixIcon: Icons.mail_outline_rounded,
                                       validator: _validateEmail,
-                                      keyboardType: TextInputType.emailAddress,
+                                      keyboardType:
+                                      TextInputType.emailAddress,
                                       textInputAction: TextInputAction.next,
                                     ),
                                     const SizedBox(height: 16),
 
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                       children: [
-                                        _SectionLabel(text: 'Password', isDark: isDark),
+                                        _SectionLabel(
+                                            text: 'Password', isDark: isDark),
                                         InkWell(
                                           onTap: () {
                                             // Handle forgot password
@@ -211,31 +194,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
                                       obscureText: _hidePassword,
                                       textInputAction: TextInputAction.done,
                                       suffixIcon: IconButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _hidePassword = !_hidePassword;
-                                          });
-                                        },
-                                        icon: Icon(
-                                          _hidePassword
-                                              ? Icons.visibility_outlined
-                                              : Icons.visibility_off_outlined,
-                                        ),
+                                        onPressed: () => setState(
+                                                () => _hidePassword =
+                                            !_hidePassword),
+                                        icon: Icon(_hidePassword
+                                            ? Icons.visibility_outlined
+                                            : Icons.visibility_off_outlined),
                                       ),
                                     ),
                                     const SizedBox(height: 18),
 
                                     Row(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.center,
                                       children: [
                                         Checkbox(
                                           value: _rememberMe,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _rememberMe = value ?? false;
-                                            });
-                                          },
-                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          onChanged: (value) => setState(() =>
+                                          _rememberMe = value ?? false),
+                                          materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
@@ -248,9 +226,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
                                     ),
                                     const SizedBox(height: 24),
 
+                                    // ✅ FIX: pass state-driven isLoading
                                     _LoginButton(
                                       isDark: isDark,
-                                      isLoading: _isLoading,
+                                      isLoading: isLoading,
                                       onTap: _login,
                                     ),
                                     const SizedBox(height: 28),
@@ -263,20 +242,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
                                           ),
                                           children: [
                                             const TextSpan(
-                                              text: 'Don\'t have an account? ',
-                                            ),
+                                                text:
+                                                'Don\'t have an account? '),
                                             TextSpan(
                                               text: 'Sign Up',
                                               style: text.bodyMedium?.copyWith(
                                                 color: colors.primary,
                                                 fontWeight: FontWeight.w700,
                                               ),
-                                              recognizer: TapGestureRecognizer()
+                                              recognizer:
+                                              TapGestureRecognizer()
                                                 ..onTap = () {
                                                   Navigator.pushReplacement(
                                                     context,
                                                     MaterialPageRoute(
-                                                      builder: (context) => const SignupScreen(),
+                                                      builder: (context) =>
+                                                      const SignupScreen(),
                                                     ),
                                                   );
                                                 },
@@ -307,12 +288,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
                       Text(
                         '© 2024 Lumina Systems. All rights reserved.',
                         style: text.labelSmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
+                            color: colors.onSurfaceVariant),
                       ),
-                      Wrap(
+                      const Wrap(
                         spacing: 24,
-                        children: const [
+                        children: [
                           _FooterLink(title: 'Privacy Policy'),
                           _FooterLink(title: 'Terms of Service'),
                           _FooterLink(title: 'Help Center'),
@@ -326,15 +306,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
                         '© 2024 Lumina Systems. All rights reserved.',
                         textAlign: TextAlign.center,
                         style: text.labelSmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
+                            color: colors.onSurfaceVariant),
                       ),
                       const SizedBox(height: 10),
-                      Wrap(
+                      const Wrap(
                         alignment: WrapAlignment.center,
                         spacing: 16,
                         runSpacing: 8,
-                        children: const [
+                        children: [
                           _FooterLink(title: 'Privacy Policy'),
                           _FooterLink(title: 'Terms of Service'),
                           _FooterLink(title: 'Help Center'),
@@ -352,17 +331,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
   }
 }
 
-// ============================================================================
-// HELPER WIDGETS
-// Note: If you are using BOTH the SignupScreen and LoginScreen in your app,
-// you can extract these private classes (_TopBar, _GlassCard, etc.) into a
-// separate file (e.g., 'auth_components.dart') and make them public so they
-// can be shared between the screens, reducing duplicate code.
-// ============================================================================
+// ─── Helper Widgets ───────────────────────────────────────────────────────────
 
 class _TopBar extends StatelessWidget {
   const _TopBar({required this.isDark});
-
   final bool isDark;
 
   @override
@@ -375,17 +347,14 @@ class _TopBar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: width >= 900 ? 40 : 20,
-        vertical: 18,
-      ),
+          horizontal: width >= 900 ? 40 : 20, vertical: 18),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.transparent,
+        color:
+        isDark ? Colors.white.withOpacity(0.05) : Colors.transparent,
         border: isDark
             ? Border(
-          bottom: BorderSide(
-            color: Colors.white.withOpacity(0.10),
-          ),
-        )
+            bottom: BorderSide(
+                color: Colors.white.withOpacity(0.10)))
             : null,
       ),
       child: Row(
@@ -429,7 +398,6 @@ class _TopBar extends StatelessWidget {
 
 class _TopActionButton extends StatelessWidget {
   const _TopActionButton({required this.isDark});
-
   final bool isDark;
 
   @override
@@ -440,10 +408,7 @@ class _TopActionButton extends StatelessWidget {
       return Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [
-              Color(0xFF545D7C),
-              Color(0xFFBDC5E9),
-            ],
+            colors: [Color(0xFF545D7C), Color(0xFFBDC5E9)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -457,9 +422,7 @@ class _TopActionButton extends StatelessWidget {
           ],
         ),
         child: ElevatedButton(
-          onPressed: () {
-            Navigator.pushNamed(context, '/signup');
-          },
+          onPressed: () => Navigator.pushNamed(context, '/signup'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
@@ -467,34 +430,26 @@ class _TopActionButton extends StatelessWidget {
             minimumSize: const Size(0, 42),
             padding: const EdgeInsets.symmetric(horizontal: 16),
           ),
-          child: Text(
-            'Sign Up',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: colors.onPrimary,
-            ),
-          ),
+          child: Text('Sign Up',
+              style: GoogleFonts.jetBrainsMono(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onPrimary)),
         ),
       );
     }
 
     return ElevatedButton(
-      onPressed: () {
-        Navigator.pushNamed(context, '/signup');
-      },
+      onPressed: () => Navigator.pushNamed(context, '/signup'),
       style: ElevatedButton.styleFrom(
         minimumSize: const Size(0, 42),
         padding: const EdgeInsets.symmetric(horizontal: 16),
       ),
-      child: Text(
-        'Sign Up',
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: colors.onPrimary,
-        ),
-      ),
+      child: Text('Sign Up',
+          style: GoogleFonts.jetBrainsMono(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: colors.onPrimary)),
     );
   }
 }
@@ -549,9 +504,7 @@ class _GlassCard extends StatelessWidget {
                       angle: math.pi / 4,
                       child: Transform.translate(
                         offset: Offset(
-                          (shimmerController.value * 600) - 300,
-                          0,
-                        ),
+                            (shimmerController.value * 600) - 300, 0),
                         child: Container(
                           width: 120,
                           decoration: BoxDecoration(
@@ -596,7 +549,6 @@ class _GlassCard extends StatelessWidget {
 
 class _BackgroundLayer extends StatelessWidget {
   const _BackgroundLayer({required this.isDark});
-
   final bool isDark;
 
   @override
@@ -605,60 +557,50 @@ class _BackgroundLayer extends StatelessWidget {
       child: Stack(
         children: [
           Container(
-            color: isDark
-                ? const Color(0xFF131315)
-                : const Color(0xFFF8F9FF),
+            color:
+            isDark ? const Color(0xFF131315) : const Color(0xFFF8F9FF),
           ),
           if (!isDark) ...[
             const _RadialBlob(
-              alignment: Alignment.topLeft,
-              color: Color.fromRGBO(210, 228, 255, 0.50),
-              size: 380,
-            ),
+                alignment: Alignment.topLeft,
+                color: Color.fromRGBO(210, 228, 255, 0.50),
+                size: 380),
             const _RadialBlob(
-              alignment: Alignment.topRight,
-              color: Color.fromRGBO(229, 238, 255, 0.40),
-              size: 360,
-            ),
+                alignment: Alignment.topRight,
+                color: Color.fromRGBO(229, 238, 255, 0.40),
+                size: 360),
             const _RadialBlob(
-              alignment: Alignment.bottomRight,
-              color: Color.fromRGBO(239, 244, 255, 0.60),
-              size: 360,
-            ),
+                alignment: Alignment.bottomRight,
+                color: Color.fromRGBO(239, 244, 255, 0.60),
+                size: 360),
             const _RadialBlob(
-              alignment: Alignment.bottomLeft,
-              color: Color.fromRGBO(211, 228, 254, 0.50),
-              size: 360,
-            ),
+                alignment: Alignment.bottomLeft,
+                color: Color.fromRGBO(211, 228, 254, 0.50),
+                size: 360),
           ] else ...[
             const _RadialBlob(
-              alignment: Alignment.topLeft,
-              color: Color.fromRGBO(31, 37, 65, 0.90),
-              size: 400,
-            ),
+                alignment: Alignment.topLeft,
+                color: Color.fromRGBO(31, 37, 65, 0.90),
+                size: 400),
             const _RadialBlob(
-              alignment: Alignment.topCenter,
-              color: Color.fromRGBO(20, 26, 50, 0.70),
-              size: 360,
-            ),
+                alignment: Alignment.topCenter,
+                color: Color.fromRGBO(20, 26, 50, 0.70),
+                size: 360),
             const _RadialBlob(
-              alignment: Alignment.bottomRight,
-              color: Color.fromRGBO(31, 37, 61, 0.70),
-              size: 400,
-            ),
+                alignment: Alignment.bottomRight,
+                color: Color.fromRGBO(31, 37, 61, 0.70),
+                size: 400),
             Positioned(
               top: MediaQuery.of(context).size.height * 0.22,
               left: -100,
               child: _GlowOrb(
-                color: const Color(0xFFBDC5E9).withOpacity(0.10),
-              ),
+                  color: const Color(0xFFBDC5E9).withOpacity(0.10)),
             ),
             Positioned(
               bottom: MediaQuery.of(context).size.height * 0.18,
               right: -100,
               child: _GlowOrb(
-                color: const Color(0xFFBFC5E4).withOpacity(0.10),
-              ),
+                  color: const Color(0xFFBFC5E4).withOpacity(0.10)),
             ),
           ],
         ],
@@ -669,7 +611,6 @@ class _BackgroundLayer extends StatelessWidget {
 
 class _GlowOrb extends StatelessWidget {
   const _GlowOrb({required this.color});
-
   final Color color;
 
   @override
@@ -680,11 +621,7 @@ class _GlowOrb extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: 120,
-            spreadRadius: 40,
-          ),
+          BoxShadow(color: color, blurRadius: 120, spreadRadius: 40),
         ],
       ),
     );
@@ -721,18 +658,13 @@ class _RadialBlob extends StatelessWidget {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({
-    required this.text,
-    required this.isDark,
-  });
-
+  const _SectionLabel({required this.text, required this.isDark});
   final String text;
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
@@ -808,10 +740,7 @@ class _LoginButton extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [
-              Color(0xFF545D7C),
-              Color(0xFFBDC5E9),
-            ],
+            colors: [Color(0xFF545D7C), Color(0xFFBDC5E9)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -832,8 +761,7 @@ class _LoginButton extends StatelessWidget {
             shadowColor: Colors.transparent,
             foregroundColor: colors.onPrimary,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+                borderRadius: BorderRadius.circular(12)),
           ),
           child: isLoading
               ? SizedBox(
@@ -841,19 +769,15 @@ class _LoginButton extends StatelessWidget {
             height: 22,
             child: CircularProgressIndicator(
               strokeWidth: 2.4,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                colors.onPrimary,
-              ),
+              valueColor:
+              AlwaysStoppedAnimation<Color>(colors.onPrimary),
             ),
           )
-              : Text(
-            'Log In',
-            style: GoogleFonts.manrope(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: colors.onPrimary,
-            ),
-          ),
+              : Text('Log In',
+              style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onPrimary)),
         ),
       );
     }
@@ -868,28 +792,20 @@ class _LoginButton extends StatelessWidget {
           height: 22,
           child: CircularProgressIndicator(
             strokeWidth: 2.4,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              colors.onPrimary,
-            ),
+            valueColor:
+            AlwaysStoppedAnimation<Color>(colors.onPrimary),
           ),
         )
             : Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Log In',
-              style: GoogleFonts.manrope(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: colors.onPrimary,
-              ),
-            ),
+            Text('Log In',
+                style: GoogleFonts.manrope(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: colors.onPrimary)),
             const SizedBox(width: 8),
-            Icon(
-              Icons.login_rounded,
-              color: colors.onPrimary,
-              size: 20,
-            ),
+            Icon(Icons.login_rounded, color: colors.onPrimary, size: 20),
           ],
         ),
       ),
@@ -899,27 +815,22 @@ class _LoginButton extends StatelessWidget {
 
 class _HeaderLink extends StatelessWidget {
   const _HeaderLink({required this.title});
-
   final String title;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-
     return InkWell(
       onTap: () {},
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        child: Text(
-          title,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.6,
-            color: colors.onSurfaceVariant,
-          ),
-        ),
+        child: Text(title,
+            style: GoogleFonts.jetBrainsMono(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.6,
+                color: colors.onSurfaceVariant)),
       ),
     );
   }
@@ -927,27 +838,22 @@ class _HeaderLink extends StatelessWidget {
 
 class _FooterLink extends StatelessWidget {
   const _FooterLink({required this.title});
-
   final String title;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-
     return InkWell(
       onTap: () {},
       borderRadius: BorderRadius.circular(6),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-        child: Text(
-          title,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.6,
-            color: colors.onSurfaceVariant,
-          ),
-        ),
+        child: Text(title,
+            style: GoogleFonts.jetBrainsMono(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.6,
+                color: colors.onSurfaceVariant)),
       ),
     );
   }
