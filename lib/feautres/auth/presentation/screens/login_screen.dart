@@ -3,20 +3,23 @@
 import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ipopi/feautres/auth/presentation/screens/sign_up_screen.dart';
 
 // Make sure this path matches your actual project structure
 import '../../../../core/theme/app_theme.dart';
+import '../providers/auth_provider.dart';
+import '../providers/auth_state.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState(); // ← fix return type
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState, not State
     with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -50,22 +53,13 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _login() async {
     final isValid = _formKey.currentState?.validate() ?? false;
-
     if (!isValid) return;
 
-    setState(() => _isLoading = true);
-
-    // Simulating a network request for authentication
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    // Navigate to Home Screen or show success
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Logged in successfully!')),
+    // Call the notifier — no setState needed for loading, state handles it
+    await ref.read(authNotifierProvider.notifier).signIn(
+      _emailController.text.trim(),
+      _passwordController.text,
     );
-    // Navigator.pushReplacementNamed(context, '/home'); // Uncomment to navigate
   }
 
   String? _validateEmail(String? value) {
@@ -90,6 +84,19 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+
+    ref.listen<AuthState>(authNotifierProvider, (_, next) {
+      if (next is AuthAuthenticated) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else if (next is AuthError) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(next.message)));
+        ref.read(authNotifierProvider.notifier).resetState();
+      }
+    });
+
+    // Drive loading indicator from state instead of local _isLoading
+    final isLoading = ref.watch(authNotifierProvider) is AuthLoading;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final text = theme.textTheme;

@@ -2,22 +2,25 @@
 import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // Make sure this path matches your actual project structure
 import '../../../../core/theme/app_theme.dart';
+import '../providers/auth_provider.dart';
+import '../providers/auth_state.dart';
 import 'login_screen.dart';
 
-class SignupScreen extends StatefulWidget {
+// AFTER
+class SignupScreen extends ConsumerStatefulWidget {  // ← ConsumerStatefulWidget
   const SignupScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState(); // ← ConsumerState return type
 }
 
-class _SignupScreenState extends State<SignupScreen>
-    with SingleTickerProviderStateMixin {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _SignupScreenState extends ConsumerState<SignupScreen>  // ← ConsumerState
+    with SingleTickerProviderStateMixin {  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -53,32 +56,28 @@ class _SignupScreenState extends State<SignupScreen>
     super.dispose();
   }
 
-  Future<void> _register() async {
-    final isValid = _formKey.currentState?.validate() ?? false;
+// REMOVE _isLoading bool field at top — delete this line:
+// bool _isLoading = false;
 
-    if (!isValid) return;
+Future<void> _register() async {
+  final isValid = _formKey.currentState?.validate() ?? false;
+  if (!isValid) return;
 
-    if (!_agreeToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please accept Terms of Service and Privacy Policy'),
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    // Simulating a network request
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
+  if (!_agreeToTerms) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Account created successfully')),
+      const SnackBar(
+        content: Text('Please accept Terms of Service and Privacy Policy'),
+      ),
     );
+    return;
   }
+
+  // Call Riverpod notifier — no setState needed
+  await ref.read(authNotifierProvider.notifier).signUp(
+    _emailController.text.trim(),
+    _passwordController.text,
+  );
+}
 
   String? _validateName(String? value) {
     if (value == null || value.trim().isEmpty) {
@@ -125,6 +124,20 @@ class _SignupScreenState extends State<SignupScreen>
 
   @override
   Widget build(BuildContext context) {
+
+    ref.listen<AuthState>(authNotifierProvider, (_, next) {
+      if (next is AuthAuthenticated) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else if (next is AuthError) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(next.message)));
+        ref.read(authNotifierProvider.notifier).resetState();
+      }
+    });
+
+    // ← Drive loading from state, not local bool
+    final isLoading = ref.watch(authNotifierProvider) is AuthLoading;
+
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final text = theme.textTheme;

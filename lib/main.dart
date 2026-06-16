@@ -1,9 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ipopi/feautres/splash_screen/splash_screen.dart';
 
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
+
+
+
 
 void main() async{
 
@@ -13,7 +17,11 @@ void main() async{
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(  // ← MUST wrap everything
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
