@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ipopi/feautres/notes/presentation/screens/notes_screen.dart';
 import 'package:ipopi/feautres/splash_screen/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -51,7 +52,7 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme
       ,
       themeMode: ThemeMode.light,
-      home: user != null ? const HomeScreen() : const SignupScreen(),
+      home: user != null ? const NotesScreen() : const SplashScreen(),
     );
   }
 }

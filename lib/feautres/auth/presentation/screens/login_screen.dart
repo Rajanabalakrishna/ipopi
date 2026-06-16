@@ -10,6 +10,7 @@ import 'package:ipopi/feautres/auth/presentation/screens/sign_up_screen.dart';
 // Make sure this path matches your actual project structure
 import '../../../../core/theme/app_theme.dart';
 import '../../../home/presentation/screens/home_screen.dart';
+import '../../../notes/presentation/screens/notes_screen.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
 
@@ -90,7 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
       if (next is AuthAuthenticated) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => const NotesScreen()),
         );
       } else if (next is AuthError) {
         ScaffoldMessenger.of(context)
