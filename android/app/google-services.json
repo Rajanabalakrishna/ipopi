@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "352349213826",
+    "project_id": "ipopi-8d919",
+    "storage_bucket": "ipopi-8d919.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:352349213826:android:8a1aae8067ae0b1a87109b",
+        "android_client_info": {
+          "package_name": "com.example.ipopi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoVi5vLxzpvS_mwEZfLX_YDVLZLRyAHj8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
