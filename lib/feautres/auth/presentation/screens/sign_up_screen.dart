@@ -125,7 +125,22 @@ Future<void> _register() async {
 
     ref.listen<AuthState>(authNotifierProvider, (_, next) {
       if (next is AuthAuthenticated) {
-        Navigator.pushReplacementNamed(context, '/home');
+        // ✅ Show success snackbar first
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully! Please log in.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        // ✅ Navigate to LoginScreen after short delay
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!context.mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        });
       } else if (next is AuthError) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(next.message)));
@@ -337,7 +352,7 @@ Future<void> _register() async {
                                     const SizedBox(height: 20),
                                     _RegisterButton(
                                       isDark: isDark,
-                                      isLoading: _isLoading,
+                                      isLoading: isLoading,
                                       onTap: _register,
                                     ),
                                     const SizedBox(height: 28),

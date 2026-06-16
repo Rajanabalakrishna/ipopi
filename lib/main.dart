@@ -2,8 +2,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ipopi/feautres/splash_screen/splash_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/providers/user_provider.dart';
+import 'core/services/shared_pref_service.dart';
 import 'core/theme/app_theme.dart';
+import 'feautres/auth/presentation/screens/sign_up_screen.dart';
+import 'feautres/home/presentation/screens/home_screen.dart';
 import 'firebase_options.dart';
 
 
@@ -17,29 +22,41 @@ void main() async{
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  final prefs = await SharedPreferences.getInstance();
+  final prefService = SharedPrefService(prefs);
   runApp(
-    const ProviderScope(  // ← MUST wrap everything
-      child: MyApp(),
+    ProviderScope(
+      overrides: [
+        // Inject the real SharedPrefService instance
+        sharedPrefProvider.overrideWithValue(prefService),
+      ],
+      // ← MUST wrap everything
+      child: const MyApp(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context,WidgetRef ref) {
+
+    final user = ref.watch(userProvider);
     return MaterialApp(
       title: 'ipopi',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme
       ,
       themeMode: ThemeMode.light,
-      home: SplashScreen(),
+      home: user != null ? const HomeScreen() : const SignupScreen(),
     );
   }
 }
+
+
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});

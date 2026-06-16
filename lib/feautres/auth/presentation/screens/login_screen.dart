@@ -9,6 +9,7 @@ import 'package:ipopi/feautres/auth/presentation/screens/sign_up_screen.dart';
 
 // Make sure this path matches your actual project structure
 import '../../../../core/theme/app_theme.dart';
+import '../../../home/presentation/screens/home_screen.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
 
@@ -87,7 +88,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>  // ← ConsumerState
 
     ref.listen<AuthState>(authNotifierProvider, (_, next) {
       if (next is AuthAuthenticated) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
       } else if (next is AuthError) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(next.message)));

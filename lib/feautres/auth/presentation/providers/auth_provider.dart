@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:riverpod/legacy.dart';
 import 'package:riverpod/riverpod.dart';
+import '../../../../core/providers/user_provider.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -50,8 +51,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final SignInUseCase _signIn;
   final SignUpUseCase _signUp;
   final SignOutUseCase _signOut;
+  final UserNotifier _userNotifier;
 
-  AuthNotifier(this._signIn, this._signUp, this._signOut)
+
+  AuthNotifier(this._signIn, this._signUp, this._signOut,this._userNotifier)
       : super(const AuthInitial());
 
   Future<void> signIn(String email, String password) async {
@@ -59,7 +62,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final result = await _signIn(email, password);
     result.fold(
           (error) => state = AuthError(error),
-          (user) => state = AuthAuthenticated(user),
+          (user) async {
+        await _userNotifier.saveUser(user); // ← save to SharedPreferences
+        state = AuthAuthenticated(user);
+      },
     );
   }
 
@@ -68,13 +74,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final result = await _signUp(email, password, fullName);
     result.fold(
           (error) => state = AuthError(error),
-          (user) => state = AuthAuthenticated(user),
+          (user) async {
+        await _userNotifier.saveUser(user); // ← save to SharedPreferences
+        state = AuthAuthenticated(user);
+      },
     );
   }
+
 
   Future<void> signOut() async {
     state = const AuthLoading();
     await _signOut();
+    await _userNotifier.clearUser(); // ← clear SharedPreferences
     state = const AuthUnauthenticated();
   }
 
@@ -86,5 +97,6 @@ final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>(
     ref.watch(signInUseCaseProvider),
     ref.watch(signUpUseCaseProvider),
     ref.watch(signOutUseCaseProvider),
-  ),
+        ref.watch(userProvider.notifier),
+      ),
 );
