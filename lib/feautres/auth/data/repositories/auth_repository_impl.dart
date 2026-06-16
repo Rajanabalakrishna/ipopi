@@ -21,12 +21,11 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(_mapFirebaseError(e.code));
     }
   }
-
   @override
   Future<Either<String, UserEntity>> signUpWithEmail(
-      String email, String password) async {
+      String email, String password, String fullName) async { // ← add fullName
     try {
-      final user = await _dataSource.signUpWithEmail(email, password);
+      final user = await _dataSource.signUpWithEmail(email, password, fullName);
       return Right(user);
     } on FirebaseAuthException catch (e) {
       return Left(_mapFirebaseError(e.code));

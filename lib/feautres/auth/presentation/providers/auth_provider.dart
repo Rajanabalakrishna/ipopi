@@ -1,8 +1,6 @@
-
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:riverpod/legacy.dart';
-//import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod/riverpod.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -17,8 +15,12 @@ final firebaseAuthProvider = Provider<FirebaseAuth>(
       (_) => FirebaseAuth.instance,
 );
 
+// ← NOW passes 2 arguments: FirebaseAuth + FirebaseFirestore
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>(
-      (ref) => AuthRemoteDataSourceImpl(ref.watch(firebaseAuthProvider)),
+      (ref) => AuthRemoteDataSourceImpl(
+    ref.watch(firebaseAuthProvider),
+    FirebaseFirestore.instance, // ← 2nd argument added here
+  ),
 );
 
 final authRepositoryProvider = Provider<AuthRepository>(
@@ -38,12 +40,12 @@ final signOutUseCaseProvider = Provider(
       (ref) => SignOutUseCase(ref.watch(authRepositoryProvider)),
 );
 
-// — Auth state stream (for app-level auth guard)
+// — Auth state stream
 final authStateStreamProvider = StreamProvider(
       (ref) => ref.watch(authRepositoryProvider).authStateChanges,
 );
 
-// — Notifier: the main state controller for login/signup actions
+// — Notifier
 class AuthNotifier extends StateNotifier<AuthState> {
   final SignInUseCase _signIn;
   final SignUpUseCase _signUp;
@@ -61,9 +63,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
-  Future<void> signUp(String email, String password) async {
+  Future<void> signUp(String email, String password, String fullName) async {
     state = const AuthLoading();
-    final result = await _signUp(email, password);
+    final result = await _signUp(email, password, fullName);
     result.fold(
           (error) => state = AuthError(error),
           (user) => state = AuthAuthenticated(user),

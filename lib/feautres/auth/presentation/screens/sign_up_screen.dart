@@ -65,17 +65,15 @@ Future<void> _register() async {
 
   if (!_agreeToTerms) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please accept Terms of Service and Privacy Policy'),
-      ),
+      const SnackBar(content: Text('Please accept Terms of Service and Privacy Policy')),
     );
     return;
   }
 
-  // Call Riverpod notifier — no setState needed
   await ref.read(authNotifierProvider.notifier).signUp(
     _emailController.text.trim(),
     _passwordController.text,
+    _fullNameController.text.trim(), // ← pass fullName
   );
 }
 

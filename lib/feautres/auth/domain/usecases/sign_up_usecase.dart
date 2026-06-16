@@ -8,7 +8,7 @@ class SignUpUseCase {
   final AuthRepository _repository;
   const SignUpUseCase(this._repository);
 
-  Future<Either<String, UserEntity>> call(String email, String password) {
-    return _repository.signUpWithEmail(email, password);
+  Future<Either<String, UserEntity>> call(String email, String password, String fullName) {
+    return _repository.signUpWithEmail(email, password, fullName);
   }
 }
